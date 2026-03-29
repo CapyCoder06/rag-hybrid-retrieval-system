@@ -1,5 +1,33 @@
 # RAG Document Generation Pipeline
+# 🚀 RAG Hybrid Retrieval System
 
+A semi-automated RAG pipeline that transforms structured insights into a retrieval-optimized document corpus.
+
+## 🔥 Key Highlights
+
+- Hybrid retrieval (text + metadata + synonym expansion)
+- Query-aware enrichment to improve recall
+- Evaluation-driven optimization (precision vs recall tuning)
+- Metadata-aware ranking with soft boosting
+
+## 📊 Results
+
+- Precision@1: +22%
+- Recall@3: +6.6%
+- MRR: +14%
+
+> Achieved balanced retrieval performance through hybrid scoring and iterative tuning.
+
+## 🧠 Core Idea
+
+Traditional semantic search fails due to vocabulary mismatch.
+
+This system solves it by combining:
+- Semantic similarity (what it says)
+- Metadata query matching (what it means)
+- Synonym expansion (how it's phrased)
+
+→ Result: Better ranking at top positions without sacrificing recall
 ## Overview
 
 Semi-automated pipeline for converting structured insights into standardized documents for Retrieval-Augmented Generation (RAG).
