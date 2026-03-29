@@ -29,3 +29,23 @@ class DataQueryEngine:
         for row in self._data:
             values.add(row[dimension])
         return sorted(values)
+
+    def get_entity_metrics(self, dimension: str, entity: str, metrics: List[str]) -> Dict[str, float]:
+        """Fetch metrics for a given entity, aggregating across all other dimension levels."""
+        matches = [row for row in self._data if row[dimension] == entity]
+        if not matches:
+            return {}
+
+        result = {}
+        for metric in metrics:
+            if metric in ["revenue", "profit"]:
+                total = sum(row[metric] for row in matches)
+                result[metric] = total
+            elif metric == "margin":
+                total_revenue = sum(row['revenue'] for row in matches)
+                total_profit = sum(row['profit'] for row in matches)
+                result['margin'] = (total_profit / total_revenue * 100) if total_revenue > 0 else 0.0
+            else:
+                # Unknown metric, skip
+                pass
+        return result

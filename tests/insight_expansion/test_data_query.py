@@ -9,11 +9,6 @@ src_path = os.path.join(project_root, 'src')
 if src_path not in sys.path:
     sys.path.insert(0, src_path)
 
-print(f"DEBUG: test_dir={test_dir}")
-print(f"DEBUG: project_root={project_root}")
-print(f"DEBUG: src_path={src_path}")
-print(f"DEBUG: sys.path={sys.path}")
-
 from insight_expansion.data_query import DataQueryEngine
 
 
@@ -24,3 +19,12 @@ def test_data_query_engine_loads_csv_and_returns_unique_categories():
     assert len(categories) >= 3
     assert "Technology" in categories
     assert "Furniture" in categories
+
+
+def test_get_entity_metrics_returns_correct_values_for_category():
+    engine = DataQueryEngine("data/eda_structured.csv")
+    metrics = engine.get_entity_metrics("category", "Technology", ["profit", "margin"])
+    assert "profit" in metrics
+    assert "margin" in metrics
+    assert metrics["profit"] > 0
+    assert metrics["margin"] > 0
