@@ -1,14 +1,14 @@
-# RAG Document Generation Pipeline
-# 🚀 RAG Hybrid Retrieval System
+# RAG Document Pipeline: Insights → Retrieval-Optimized Documents
+# 🚀 Hybrid Retrieval System
 
 A semi-automated RAG pipeline that transforms structured insights into a retrieval-optimized document corpus.
 
 ## 🔥 Key Highlights
 
-- Hybrid retrieval (text + metadata + synonym expansion)
-- Query-aware enrichment to improve recall
-- Evaluation-driven optimization (precision vs recall tuning)
-- Metadata-aware ranking with soft boosting
+- **Hybrid retrieval** (text + metadata + synonym expansion)
+- **Query-aware enrichment** to improve recall
+- **Evaluation-driven optimization** (precision vs recall tuning)
+- **Metadata-aware ranking** with soft boosting
 
 ## 📊 Results
 
@@ -28,239 +28,33 @@ This system solves it by combining:
 - Synonym expansion (how it's phrased)
 
 → Result: Better ranking at top positions without sacrificing recall
+
 ## Overview
 
-Semi-automated pipeline for converting structured insights into standardized documents for Retrieval-Augmented Generation (RAG).
+This project implements an **automated pipeline** that transforms structured insights into retrieval-optimized documents for Retrieval-Augmented Generation (RAG) systems.
 
-Based on the CLAUDE.md system design, this implementation covers **Steps 4-9**:
-1. **Template Mapping** - Map insights to document types (FACT, TREND, ANOMALY, METRIC, QUESTION)
-2. **Document Generation** - Apply templates to create standardized documents
-3. **Enrichment** - Generate 5-10 semantic variations per document (optional)
-4. **Variation Selection** - Filter top 3 highest quality variations
-5. **Validation** - Ensure quality and prevent hallucinations
-6. **Metadata Generation** - Add structured metadata for retrieval filtering
-7. **Chunking** - Split documents into 200-500 token chunks for embedding
-
-## Architecture
-
+**Pipeline Flow:**
 ```
-Insights (JSON)
+Insight (structured JSON)
     ↓
-Template Mapping (rule-based classification)
+Template Mapping (FACT, TREND, ANOMALY, METRIC, QUESTION)
     ↓
-Document Generation (template rendering)
+Document Generation (standardized templates)
     ↓
-[Optional] Enrichment (generate 5-10 variations)
+[Optional] Enrichment (query-aware variations)
     ↓
-Selection (filter top 3 variations)
+Retrieval Optimization (metadata with queries & synonyms)
     ↓
-Validation (quality checks)
+Validation (semantic drift prevention)
     ↓
 Chunking (semantic-aware splitting)
     ↓
-Chunks (ready for embedding → Pinecone → RAG)
+Documents & Chunks (ready for embedding → vector DB → RAG)
 ```
 
-## Quick Start
+**Goal:** Convert a small set of expert-validated insights into a scalable, high-quality document corpus that maximizes retrieval accuracy.
 
-### Installation
-
-```bash
-pip install -r requirements.txt
-```
-
-### Usage
-
-#### Using the full pipeline
-
-```python
-from pipeline import DocumentPipeline
-
-# Load your insights
-insights = [
-    {
-        "text": "Technology has the highest profit",
-        "dimensions": ["category"],
-        "metrics": ["profit"]
-    },
-    # ... more insights
-]
-
-# Run pipeline
-pipeline = DocumentPipeline(chunk_size=200, chunk_overlap=50)
-result = pipeline.run(insights, validate=True, chunk=True)
-
-# Get results
-documents = result["documents"]
-chunks = result["chunks"]
-validation_summary = result["validation"]
-```
-
-#### Generate only (skip validation & chunking)
-
-```python
-from pipeline import generate_from_insights
-
-documents = generate_from_insights(insights)
-```
-
-#### Individual components
-
-```python
-from pipeline import DocumentGenerator, enhance_for_retrieval
-
-# Generate document
-generator = DocumentGenerator()
-doc = generator.generate_document(insight)
-
-# Enhance for retrieval (adds query-style questions and synonyms)
-enhanced_text = enhance_for_retrieval(doc["text"])
-doc["text"] = enhanced_text
-
-# Validate
-from pipeline import DocumentValidator
-validator = DocumentValidator()
-result = validator.validate(doc)
-
-# Chunk
-from pipeline import DocumentChunker
-chunker = DocumentChunker(chunk_size=200, overlap=50)
-chunks = chunker.chunk_document(doc)
-```
-
-### Command line demo
-
-```bash
-python demo_pipeline.py
-```
-
-This will:
-- Load sample insights from `insights_sample.json`
-- Generate documents
-- Validate them
-- Chunk them
-- Save outputs to `output/documents.json` and `output/chunks.json`
-
-## Document Types
-
-| Type | Use Case | Template |
-|------|----------|----------|
-| **FACT** | Static facts, comparisons, rankings | `[FACT] Title`, dimensions, metrics, grain |
-| **TREND** | Time-series patterns, growth/decline | `[TREND] Title`, dimension, metrics, grain, trend direction |
-| **ANOMALY** | Outliers, negative metrics, problems | `[ANOMALY] Title`, dimension, metric, issue, possible_cause |
-| **METRIC** | Definitions and calculations | `[METRIC] metric_name`, definition, formula, interpretation |
-| **QUESTION** | Q&A pairs | `[QUESTION] Q: ... A: ...` |
-
-### Template Mapping Logic
-
-The `TemplateMapper` automatically selects document types using:
-
-1. **Explicit hint** - If insight includes `type_hint` field, it's used directly
-2. **Keyword analysis** - Scores based on keywords in the insight text:
-   - FACT: highest, lowest, best, worst, top, bottom, etc.
-   - TREND: increase, decrease, growth, CAGR, YoY, etc.
-   - ANOMALY: negative, loss, anomaly, outlier, problem, etc.
-   - METRIC: margin, definition, formula, calculate
-   - QUESTION: why, how, what, ?
-3. **Special rules** - For profit metrics with negative values → ANOMALY
-
-### Validation Rules
-
-Each document must:
-- Have non-empty text
-- Include correct `type` in metadata
-- Have proper type prefix in text (e.g., `[FACT]`)
-- Include dimensions or metrics (for retrieval)
-- Not contain hallucination markers ("I don't know", etc.)
-
-### Chunking
-
-### Chunking
-
-Documents are split into chunks of 200-500 tokens (words) with overlap:
-- Sentences boundaries respected when possible
-- Metadata preserved and attached to each chunk
-- Each chunk gets `chunk_index` and `chunk_count` fields
-
-### Retrieval Optimization
-
-The `enhance_for_retrieval()` function improves document searchability by adding:
-
-- **Query-style questions** - Natural language questions users might ask
-- **Synonym alternatives** - Key term synonyms to improve match recall
-- **Alternative phrasings** - Different ways to express the same fact
-
-Example:
-```python
-from pipeline import enhance_for_retrieval
-
-doc_text = "# [FACT] Technology has highest profit\n\nTechnology leads with $664K profit."
-enhanced = enhance_for_retrieval(doc_text)
-```
-
-Output:
-```
-# [FACT] Technology has highest profit
-
-Technology leads with $664K profit.
-
-# Retrieval Queries
-- Which category has the highest profit?
-- What is the top category by profit?
-- Which category leads in profit?
-
-# Alternative Terms
-- profit: earnings, income, gains
-- highest: maximum, peak, top
-```
-
-**Constraints:**
-- Original meaning preserved (no new facts)
-- Concise output (only essential additions)
-- Works for all document types (FACT, TREND, ANOMALY, METRIC, QUESTION)
-
-## Enrichment
-
-The enrichment module expands each standardized document into multiple semantic variations to improve retrieval recall. This implements the Hybrid Enrichment strategy from CLAUDE.md.
-
-### How It Works
-
-1. **Input**: 1 standardized document
-2. **Generation**: Produce 5-10 variations using:
-   - Synonym substitution (controlled vocabulary)
-   - Sentence restructuring (active/passive, reordering)
-   - Framing variations (different reporting verbs: "Analysis shows", "Data indicates", etc.)
-   - Type-specific templates (TREND, ANOMALY, QUESTION have custom patterns)
-3. **Selection**: Filter top 3 highest quality variations
-
-### Constraints
-
-- **No hallucination** - All content derived from original; no new facts added
-- **Meaning preservation** - Numeric values, entities, and relationships remain identical
-- **Metadata consistency** - All variations share identical metadata structures
-
-### Usage
-
-```python
-from pipeline import DocumentPipeline, expand_document, select_top_variations
-
-# Option 1: Enable enrichment in pipeline
-pipeline = DocumentPipeline(enrich=True, enrich_variations=3)
-result = pipeline.run(insights)  # Returns 3 variants per insight
-
-# Option 2: Use enrichment module directly
-doc = generator.generate_document(insight)
-variations = expand_document(doc)  # 5-10 variations
-top3 = select_top_variations(variations, top_k=3)  # Keep best 3
-```
-
-### Quality Filtering
-
-`select_top_variations` uses heuristics:
-- Prioritizes original document (index 0)
-- Rewards appropriate length (50-500 chars)
-- Penalizes formatting errors (multiple spaces, empty text)
-- Ensures diversity while maintaining quality
+---
 
 ## Hybrid Retrieval Optimization
 
@@ -308,7 +102,7 @@ A comprehensive evaluation using 70 test queries compared baseline (text-only) v
 
 **Precision Improvements (Top-k results):**
 - Precision@3: +52.2% (0.247 → 0.376)
-- Precision@5: +65.6% (0.247 → 0.376)
+- Precision@5: +65.6% (0.183 → 0.303)
 - Precision@10: +101.0% (0.100 → 0.201)
 
 **Trade-off:**
@@ -381,34 +175,224 @@ This allows accurate simulation of production retrieval behavior before embeddin
 }
 ```
 
-## File Structure
+## Project Structure
 
 ```
 .
-├── src/pipeline/
-│   ├── __init__.py          # Pipeline orchestrator
-│   ├── types.py             # DocumentType enum
-│   ├── templates.py         # Template definitions
-│   ├── template_mapper.py   # Insight → DocumentType mapping
-│   ├── document_generator.py # Template rendering
-│   ├── enrichment.py        # Variation generation & selection
-│   ├── validator.py         # Quality validation
-│   └── chunker.py           # Document chunking
-├── tests/
-│   ├── test_pipeline.py     # Pipeline unit tests (20)
-│   └── test_enrichment.py   # Enrichment tests (12)
-├── demo_pipeline.py         # Demo script
-├── insights_sample.json     # Sample input
+├── src/pipeline/          # Core pipeline modules
+│   ├── __init__.py        # DocumentPipeline orchestrator
+│   ├── types.py           # DocumentType enum
+│   ├── templates.py       # Document templates (FACT, TREND, etc.)
+│   ├── template_mapper.py # Insight → type classification
+│   ├── document_generator.py # Template rendering + retrieval metadata
+│   ├── enrichment.py      # Variation generation & filtering
+│   ├── validator.py       # Quality & semantic drift checks
+│   ├── chunker.py         # Semantic-aware document splitting
+│   ├── config.py          # Configuration loader
+│   ├── evaluator.py       # Pre-embedding retrieval evaluation
+│   └── metadata_retrieval.py # Hybrid scoring (QueryExpander, HybridScorer)
+│
+├── tests/                 # Comprehensive test suite (154 passing)
+│   ├── test_pipeline.py
+│   ├── test_enrichment.py
+│   ├── test_metadata_retrieval.py
+│   ├── test_metadata_aware_evaluator.py
+│   ├── test_semantic_chunking.py
+│   ├── test_semantic_drift.py
+│   └── ... (15 test files)
+│
+├── evaluation/            # Evaluation scripts and test queries
+│   ├── README.md
+│   ├── comparison_evaluator.py
+│   ├── full_comparison_evaluator.py
+│   └── test_queries.json   # 70 queries with relevance labels
+│
+├── experiments/           # Experiment snapshots
+│   └── retrieval_v1_results.json  # Final metrics & config
+│
+├── docs/                  # Design docs and planning notes
+│   └── superpowers/
+│       ├── plans/
+│       └── specs/
+│
+├── eda/                   # (Note) Exploratory data analysis - source of structured insights
+│   └── hypothesis_eda.ipynb
+│
+├── output/                # Generated outputs (demo, evaluation)
+│   ├── demo_output.json   # Clean demo showing pipeline output
+│   └── full_comparison_results.json
+│
+├── config.yaml            # Pipeline configuration (retrieval_v1_stable)
+├── demo_pipeline.py       # End-to-end demo script
+├── evaluation_demo.py     # Evaluation demo
+├── insights_sample.json   # Sample insights for testing
 ├── requirements.txt
-└── CLAUDE.md                # System design
+└── SYSTEM_DESIGN.md       # System design document (formerly CLAUDE.md)
 ```
+
+---
+
+## Quick Start
+
+### Installation
+
+```bash
+pip install -r requirements.txt
+```
+
+### Run Demo
+
+```bash
+python demo_pipeline.py
+```
+
+This loads sample insights, generates documents, validates them, chunks them, and saves to `output/documents.json` and `output/chunks.json`.
+
+### Use the Pipeline
+
+```python
+from pipeline import DocumentPipeline
+
+# Load your structured insights (JSON format)
+insights = [
+    {
+        "text": "Technology has the highest profit",
+        "dimensions": ["category"],
+        "metrics": ["profit"],
+        "type_hint": "fact"
+    },
+    # ... more insights
+]
+
+# Configure pipeline
+pipeline = DocumentPipeline(
+    enrich=True,              # Enable enrichment (variations)
+    enrich_variations=2,      # Keep top 2 variations per document
+    optimize_retrieval=True,  # Add query/synonym metadata
+    chunk_size=200,
+    chunk_overlap=50
+)
+
+# Run full pipeline
+result = pipeline.run(insights, validate=True, chunk=True)
+
+# Access results
+documents = result["documents"]  # Generated documents with metadata
+chunks = result["chunks"]        # Chunked documents ready for embedding
+```
+
+---
+
+## Document Types
+
+| Type | Purpose | Template |
+|------|---------|----------|
+| **FACT** | Static facts, rankings, comparisons | `[FACT] Title` + dimensions, metrics, grain |
+| **TREND** | Time-series patterns, growth/decline | `[TREND] Title` + dimension, metrics, trend, grain |
+| **ANOMALY** | Outliers, negative metrics, problems | `[ANOMALY] Title` + dimension, metric, issue, cause |
+| **METRIC** | Definitions and calculations | `[METRIC] name` + definition, formula, interpretation |
+| **QUESTION** | Q&A pairs | `[QUESTION] Q: ... A: ...` |
+
+Document types are auto-detected via keyword analysis, or explicitly set via `type_hint`.
+
+---
+
+## Retrieval Optimization
+
+Each document can include metadata fields that enhance retrieval:
+
+- `queries`: Natural language questions users might ask (auto-generated)
+- `synonyms`: Key term alternatives (e.g., profit → earnings, income)
+
+Example document metadata:
+```json
+{
+  "type": "fact",
+  "dimensions": ["category"],
+  "metrics": ["profit"],
+  "queries": [
+    "Which category has the highest profit?",
+    "What is the top performer by margin?"
+  ],
+  "synonyms": {
+    "profit": ["earnings", "income"],
+    "highest": ["maximum", "peak"]
+  }
+}
+```
+
+The `MetadataAwareRetrievalEvaluator` uses these fields during retrieval scoring to improve result relevance.
+
+---
+
+## Configuration
+
+All pipeline parameters are defined in `config.yaml`:
+
+```yaml
+# Retrieval configuration (stable version)
+retrieval_versions:
+  retrieval_v1_stable:
+    weights:
+      text: 0.5
+      metadata_query: 0.4
+      expanded: 0.1
+    metadata_bonus:
+      enabled: true
+      threshold: 0.6
+      boost_factor: 1.1
+```
+
+To use a specific version, uncomment the `retrieval.use_version` setting.
+
+---
+
+## Evaluation
+
+The evaluation framework measures retrieval quality **before embedding** using semantic similarity:
+
+```bash
+python evaluation_demo.py          # Simple evaluation
+python evaluation/full_comparison_evaluator.py  # Full baseline vs enriched vs optimized
+```
+
+Metrics computed:
+- **Recall@k**: Fraction of relevant documents found in top-k
+- **Precision@k**: Accuracy of top-k results
+- **MRR**: Mean Reciprocal Rank (first relevant doc position)
+
+See `experiments/retrieval_v1_results.json` for final evaluation results.
+
+---
 
 ## Design Principles
 
-- **No hallucination** - All content derived from input insight, no generation
-- **Preserve meaning** - Templates maintain original insight intent
-- **Optimized for retrieval** - Metadata includes dimensions, metrics, types
-- **Human-in-the-loop** - Template mapping can be overridden via `type_hint`
+- **Insight preservation** – Documents strictly follow input insight; no hallucination
+- **Retrieval-first** – Metadata and structure optimized for semantic search
+- **Quality assurance** – Semantic drift validation ensures meaning retention
+- **Configurability** – All weights, thresholds, and counts adjustable via config.yaml
+- **Deterministic** – Same insight → same document (except enrichment randomness)
+
+---
+
+## Integration with RAG Pipeline
+
+This pipeline produces the document corpus. Next steps (handled by integration code):
+
+1. **Embedding** – Convert document text to vectors (e.g., using sentence-transformers)
+2. **Upsert** – Store vectors + metadata in Pinecone (or other vector DB)
+3. **Retrieval** – Use `MetadataAwareRetrievalEvaluator` logic in production to score and rank documents
+
+---
+
+## Constraints
+
+- No autonomous knowledge generation – all content derived from input insights
+- Faithful rendering – templates preserve original meaning and numeric values
+- Validation rejects documents below semantic similarity threshold (0.65)
+- Enrichment limited to 2 high-quality variations per document to maintain precision
+
+---
 
 ## Testing
 
@@ -416,76 +400,23 @@ This allows accurate simulation of production retrieval behavior before embeddin
 pytest tests/ -v
 ```
 
-All **32 tests** should pass (20 pipeline + 12 enrichment).
+All **154 tests** should pass, covering:
+- Document generation and validation
+- Enrichment quality and constraints
+- Metadata ranking and retrieval optimization
+- Semantic chunking and drift prevention
+- Configuration and integration
 
-## Constraints
+---
 
-- No autonomous knowledge generation - scales and structures human insights only
-- Faithful to original insight - no interpretation beyond structure
-- Templates are deterministic - same insight → same output
-- Validation prevents missing required fields and common hallucination markers
+## EDA: Source of Insights
 
-## Integration
+The `eda/hypothesis_eda.ipynb` notebook performs exploratory data analysis on the Superstore dataset to **generate structured insights**. These insights serve as the input to this pipeline.
 
-After chunking, the output should be:
-1. Embedded (by teammate)
-2. Upserted to Pinecone with metadata (by teammate)
-3. Used for RAG retrieval (by teammate)
+This Jupyter notebook is the **manual/hypothesis-driven EDA** step that produces the JSON-formatted insights this pipeline consumes.
 
-See CLAUDE.md for full pipeline context.
+---
 
-## Metadata Ranking Signals
+## License
 
-The document generator now adds three ranking fields:
-
-- **importance**: `"low"`, `"medium"`, `"high"` (auto-inferred from content keywords)
-- **confidence**: `0.0–1.0` (initial score + updated by validation)
-- **source**: `"EDA"` (default), or set via `insight["source"]`
-
-Example metadata:
-```json
-{
-  "type": "fact",
-  "dimensions": ["category"],
-  "metrics": ["profit"],
-  "importance": "high",
-  "confidence": 0.9,
-  "source": "EDA"
-}
-```
-
-Confidence is adjusted during validation:
-- Valid: +0.2 (max 1.0)
-- Invalid: -0.3
-- Each issue: -0.1
-- Each warning: -0.05
-
-## Semantic Drift Prevention
-
-To ensure generated documents preserve the original insight meaning, the validator provides:
-
-```python
-from pipeline.validator import semantic_similarity, validate_semantic_drift
-
-original = "Technology has the highest profit."
-generated = "# [FACT] Technology has highest profit\n\nTechnology leads with \$664K."
-
-# Check similarity
-sim = semantic_similarity(original, generated)
-print(f"Similarity: {sim:.2f}")  # e.g., 0.824
-
-# Validate against threshold
-is_valid, sim = validate_semantic_drift(original, generated, threshold=0.65)
-print(f"Acceptable: {is_valid}")  # True if similarity >= threshold
-```
-
-**Algorithm:**
-- Weighted keyword/token overlap
-- Synonym normalization (sales=revenue, increase=grow, highest=top)
-- Number and entity matching (exact values preserved)
-- Higher weight for numbers, entities, and domain keywords
-- Lower weight for stop words
-
-**Threshold:** Default 0.65 (adjustable based on tolerance for rewording)
-
-Use this to screen generated documents for meaning preservation before embedding.
+[Specify license if applicable]

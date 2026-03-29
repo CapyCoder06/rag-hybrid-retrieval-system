@@ -19,8 +19,8 @@ enrichment:
   # Number of variations to generate per document (5-10)
   variations_to_generate: 8
 
-  # Number of top variations to keep per document
-  variations_to_keep: 3
+  # Number of top variations to keep per document (limited to 2 for high quality)
+  variations_to_keep: 2
 
 validation:
   # Minimum semantic similarity threshold (0.0-1.0)
