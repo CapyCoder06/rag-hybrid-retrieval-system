@@ -28,3 +28,28 @@ def test_get_entity_metrics_returns_correct_values_for_category():
     assert "margin" in metrics
     assert metrics["profit"] > 0
     assert metrics["margin"] > 0
+
+
+def test_get_ranking_orders_categories_by_profit():
+    engine = DataQueryEngine("data/eda_structured.csv")
+    ranking = engine.get_ranking("category", "profit")
+    assert len(ranking) == 3  # 3 categories
+    # First should be highest
+    assert ranking[0][0] == "Technology"
+    assert ranking[0][1] > 0
+    # Check descending order
+    for i in range(len(ranking)-1):
+        assert ranking[i][1] >= ranking[i+1][1]
+
+
+def test_get_entity_rank_returns_1_for_highest():
+    engine = DataQueryEngine("data/eda_structured.csv")
+    rank = engine.get_entity_rank("category", "profit", "Technology")
+    assert rank == 1
+
+
+def test_get_average_computes_mean_correctly():
+    engine = DataQueryEngine("data/eda_structured.csv")
+    avg = engine.get_average("category", "profit")
+    # Should be sum of all category profits / number of categories
+    assert avg > 0

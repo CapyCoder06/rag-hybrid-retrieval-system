@@ -49,3 +49,42 @@ class DataQueryEngine:
                 # Unknown metric, skip
                 pass
         return result
+
+    def get_ranking(self, dimension: str, metric: str) -> List[tuple]:
+        """Return list of (entity, value) sorted descending by aggregated metric."""
+        entities = self.get_unique_values(dimension)
+        ranked = []
+        for entity in entities:
+            metrics_data = self.get_entity_metrics(dimension, entity, [metric])
+            value = metrics_data.get(metric, 0.0)
+            ranked.append((entity, value))
+        ranked.sort(key=lambda x: x[1], reverse=True)
+        return ranked
+
+    def get_entity_rank(self, dimension: str, metric: str, entity: str) -> int:
+        """Return rank position (1 = highest). Ties get same rank (dense ranking)."""
+        ranking = self.get_ranking(dimension, metric)
+        # Find target entity's value
+        target_value = None
+        for ent, val in ranking:
+            if ent == entity:
+                target_value = val
+                break
+        if target_value is None:
+            return len(ranking) + 1  # not found
+        # Dense ranking: first occurrence of this value gets rank
+        for i, (ent, val) in enumerate(ranking):
+            if val == target_value:
+                return i + 1
+        return len(ranking) + 1
+
+    def get_average(self, dimension: str, metric: str) -> float:
+        """Compute average of metric across all entities in dimension."""
+        entities = self.get_unique_values(dimension)
+        total = 0.0
+        count = 0
+        for entity in entities:
+            metrics_data = self.get_entity_metrics(dimension, entity, [metric])
+            total += metrics_data.get(metric, 0.0)
+            count += 1
+        return total / count if count > 0 else 0.0
