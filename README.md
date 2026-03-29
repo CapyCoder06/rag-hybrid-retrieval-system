@@ -2,6 +2,13 @@
 
 A semi-automated pipeline that transforms seed insights into a scalable, structured insight corpus.
 
+## 🚀 Why This Matters
+
+RAG systems fail not because of lack of data,
+but because of lack of representation diversity.
+
+This project solves that.
+
 ## 🔥 Key Highlights
 
 - **Pattern-based expansion**: Generates diverse insights from seed patterns
@@ -167,6 +174,11 @@ Example structure:
   ]
 }
 ```
+This project reflects how I think about data systems:
+
+- Accuracy over scale
+- Determinism over randomness
+- Structure over brute-force generation
 
 ---
 
