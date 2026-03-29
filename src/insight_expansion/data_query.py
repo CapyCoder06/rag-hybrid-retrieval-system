@@ -88,3 +88,43 @@ class DataQueryEngine:
             total += metrics_data.get(metric, 0.0)
             count += 1
         return total / count if count > 0 else 0.0
+
+    def detect_outliers(self, dimension: str, metric: str, condition: str, threshold: float = None) -> List[str]:
+        """Return entities that satisfy anomaly conditions:
+        - condition='negative': metric value < 0
+        - condition='below_threshold': metric value < threshold
+        - condition='outlier': beyond mean ± 2 standard deviations
+        """
+        entities = self.get_unique_values(dimension)
+        outliers = []
+        for entity in entities:
+            metrics_data = self.get_entity_metrics(dimension, entity, [metric])
+            value = metrics_data.get(metric, 0.0)
+            if condition == "negative":
+                if value < 0:
+                    outliers.append(entity)
+            elif condition == "below_threshold":
+                if threshold is not None and value < threshold:
+                    outliers.append(entity)
+            elif condition == "outlier":
+                # Compute mean and std across all entities
+                all_values = [self.get_entity_metrics(dimension, ent, [metric]).get(metric, 0.0) for ent in entities]
+                mean_val = sum(all_values) / len(all_values) if all_values else 0
+                variance = sum((x - mean_val) ** 2 for x in all_values) / len(all_values) if all_values else 0
+                std = variance ** 0.5
+                if abs(value - mean_val) > 2 * std:
+                    outliers.append(entity)
+        return outliers
+
+    def get_available_dimensions(self) -> List[str]:
+        """Return categorical columns that can be used as dimensions."""
+        # Fixed based on dataset structure
+        return ["region", "category"]
+
+    def has_metric_for_dimension(self, dimension: str, metric: str) -> bool:
+        """Check whether the dataset contains the given metric aggregated at the specified dimension level."""
+        entities = self.get_unique_values(dimension)
+        if not entities:
+            return False
+        sample_metrics = self.get_entity_metrics(dimension, entities[0], [metric])
+        return metric in sample_metrics

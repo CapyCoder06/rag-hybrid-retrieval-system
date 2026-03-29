@@ -53,3 +53,27 @@ def test_get_average_computes_mean_correctly():
     avg = engine.get_average("category", "profit")
     # Should be sum of all category profits / number of categories
     assert avg > 0
+
+
+def test_detect_outliers_finds_negative_profit_entities():
+    engine = DataQueryEngine("data/eda_structured.csv")
+    negatives = engine.detect_outliers("category", "profit", "negative")
+    # Should include categories with total profit < 0 if any exist
+    assert isinstance(negatives, list)
+    for entity in negatives:
+        metrics = engine.get_entity_metrics("category", entity, ["profit"])
+        assert metrics["profit"] < 0
+
+
+def test_has_metric_for_dimension_returns_true_for_valid_combinations():
+    engine = DataQueryEngine("data/eda_structured.csv")
+    assert engine.has_metric_for_dimension("category", "profit") is True
+    assert engine.has_metric_for_dimension("category", "margin") is True
+    assert engine.has_metric_for_dimension("region", "profit") is True
+
+
+def test_get_available_dimensions_returns_all_dimension_columns():
+    engine = DataQueryEngine("data/eda_structured.csv")
+    dims = engine.get_available_dimensions()
+    assert "category" in dims
+    assert "region" in dims
