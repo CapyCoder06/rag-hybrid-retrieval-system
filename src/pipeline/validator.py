@@ -236,6 +236,9 @@ class DocumentValidator:
         if not dimensions and not metrics:
             result["warnings"].append("No dimensions or metrics in metadata (affects retrieval)")
 
+        # Validate that all metric concepts referenced in text are covered by metrics list
+        self._validate_metric_coverage(text, metrics, result)
+
         # Check template formatting
         if doc_type:
             expected_prefix = f"[{doc_type.upper()}]"
@@ -256,6 +259,112 @@ class DocumentValidator:
         self._update_confidence(document, result)
 
         return result
+
+    def _extract_insight_description(self, text: str) -> str:
+        """
+        Extract the original insight description from a rendered document.
+
+        The document structure is:
+        # [TYPE] Title
+        <blank line>
+        Description (original insight text)
+        <blank line>
+        - Dimensions: ...
+        - Metrics: ...
+        ...
+
+        Args:
+            text: Full document text
+
+        Returns:
+            The insight description text, or empty string if not found
+        """
+        if not text:
+            return ""
+
+        lines = text.split('\n')
+
+        # Skip the header line (starts with #)
+        start_idx = 0
+        for i, line in enumerate(lines):
+            if line.strip().startswith('#'):
+                start_idx = i
+                break
+
+        # Find the first non-empty line after the header
+        content_start = None
+        for i in range(start_idx + 1, len(lines)):
+            if lines[i].strip():
+                content_start = i
+                break
+
+        if content_start is None:
+            return ""
+
+        # The description continues until we hit a line that starts with '-'
+        # or another section header or blank line followed by such
+        description_lines = []
+        for i in range(content_start, len(lines)):
+            line = lines[i].strip()
+            # Stop at template labels
+            if line.startswith('-'):
+                break
+            # Also stop if we encounter a blank line followed by a label on next line
+            if not line and i + 1 < len(lines) and lines[i + 1].strip().startswith('-'):
+                break
+            if line.startswith('#'):
+                break
+            description_lines.append(line)
+
+        return ' '.join(description_lines).strip()
+
+    def _validate_metric_coverage(self, text: str, metrics: List[str], result: Dict[str, Any]):
+        """
+        Validate that all metric concepts referenced in the insight text are present in the metrics list.
+
+        This ensures the insight is properly indexed for retrieval and the metadata
+        accurately reflects the metrics discussed in the text.
+
+        Args:
+            text: The document text (contains original insight description plus template labels)
+            metrics: List of metric names from metadata
+            result: Validation result dict to append warnings/issues to
+        """
+        insight_text = self._extract_insight_description(text)
+        if not insight_text:
+            return
+
+        # Mapping: canonical metric name -> common textual variants (synonyms)
+        METRIC_KEYWORDS = {
+            'profit': ['profit', 'earnings', 'income', 'gain', 'gains', 'net income', 'net profit', 'loss', 'losses', 'bottom line'],
+            'sales': ['sales', 'revenue', 'turnover', 'business income'],
+            'margin': ['margin', 'profitability', 'return', 'returns', 'net margin', 'gross margin'],
+            'cagr': ['cagr', 'compound annual growth rate', 'growth rate', 'annual growth'],
+        }
+
+        # Build reverse dictionary: variant (lowercase) -> canonical
+        variant_to_canonical = {}
+        for canonical, variants in METRIC_KEYWORDS.items():
+            for v in variants:
+                variant_to_canonical[v.lower()] = canonical
+
+        normalized_metrics = set(m.lower().strip() for m in metrics)
+        text_lower = insight_text.lower()
+
+        missing = set()
+        for variant, canonical in variant_to_canonical.items():
+            if ' ' in variant:
+                present = variant in text_lower
+            else:
+                present = re.search(r'\b' + re.escape(variant) + r'\b', text_lower) is not None
+
+            if present and canonical not in normalized_metrics and variant not in normalized_metrics:
+                missing.add(canonical)
+
+        if missing:
+            result["warnings"].append(
+                f"Metrics referenced in text but missing from metadata: {', '.join(sorted(missing))}."
+            )
 
     def _update_confidence(self, document: Dict[str, Any], validation: Dict[str, Any]):
         """

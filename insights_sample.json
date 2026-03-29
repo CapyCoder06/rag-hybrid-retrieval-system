@@ -2,25 +2,25 @@
   {
     "text": "Technology has the highest profit of $664K with margin 14%",
     "dimensions": ["category"],
-    "metrics": ["profit"],
+    "metrics": ["profit", "margin"],
     "type_hint": "fact"
   },
   {
     "text": "Sales increased continuously from $2.26M (2011) to $4.3M (2014), CAGR ~24%/year",
     "dimensions": ["year"],
-    "metrics": ["sales"],
+    "metrics": ["sales", "cagr"],
     "type_hint": "trend"
   },
   {
     "text": "Furniture has low margin of 7%, below average 11.6%",
     "dimensions": ["category"],
-    "metrics": ["margin"],
+    "metrics": ["margin", "average_margin"],
     "type_hint": "fact"
   },
   {
     "text": "Tables sub-category has negative profit of -$64K (margin -8.5%)",
     "dimensions": ["sub_category"],
-    "metrics": ["profit"],
+    "metrics": ["profit", "margin"],
     "type_hint": "anomaly",
     "issue": "Sustained losses over 4 years despite strong sales ($1.47M)",
     "possible_cause": "High discount rates and/or low pricing strategy"
@@ -42,7 +42,7 @@
   {
     "text": "Southeast Asia margin is only 2% despite $884K revenue",
     "dimensions": ["region"],
-    "metrics": ["margin"],
+    "metrics": ["margin", "revenue"],
     "type_hint": "anomaly",
     "issue": "Profit margin significantly below company average",
     "possible_cause": "High operational costs or unfavorable product mix"
@@ -62,7 +62,7 @@
   {
     "text": "Profit margin is calculated as profit divided by sales times 100",
     "dimensions": [],
-    "metrics": ["profit", "sales"],
+    "metrics": ["profit", "sales", "margin"],
     "type_hint": "metric",
     "definition": "Profit margin measures what percentage of revenue translates to profit",
     "formula": "profit / sales * 100%"

@@ -160,6 +160,38 @@ class TestValidator:
         assert result["valid"] is True
         assert len(result["issues"]) == 0
 
+    def test_numerical_coverage_valid(self):
+        """Test that document with all numerical values covered by metrics passes."""
+        doc = {
+            "text": "# [FACT] Technology profit\n\nTechnology has profit of $664K with margin 14%.",
+            "metadata": {
+                "type": "fact",
+                "dimensions": ["category"],
+                "metrics": ["profit", "margin"]
+            }
+        }
+        result = self.validator.validate(doc)
+        assert result["valid"] is True
+        # Should have no warnings about numerical coverage
+        for warning in result["warnings"]:
+            assert "Numerical value" not in warning
+
+    def test_numerical_coverage_missing_metric(self):
+        """Test that missing metric for a numerical value produces warning."""
+        doc = {
+            "text": "# [FACT] Technology performance\n\nTechnology has profit of $664K with margin 14%.",
+            "metadata": {
+                "type": "fact",
+                "dimensions": ["category"],
+                "metrics": ["profit"]  # Missing 'margin' even though 14% is in text
+            }
+        }
+        result = self.validator.validate(doc)
+        assert result["valid"] is True  # Warning, not error
+        # Should have a warning about missing 'margin'
+        has_warning = any("margin" in w for w in result["warnings"])
+        assert has_warning, f"Expected warning about margin, got: {result['warnings']}"
+
     def test_missing_text(self):
         doc = {
             "text": "",

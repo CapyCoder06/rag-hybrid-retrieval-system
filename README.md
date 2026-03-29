@@ -168,10 +168,10 @@ This allows accurate simulation of production retrieval behavior before embeddin
     "type": "fact",
     "dimensions": ["category"],
     "metrics": ["profit"],
-    "_doc_id": 0,
-    "chunk_index": 0,
-    "chunk_count": 2
-  }
+    "_doc_id": 0
+  },
+  "chunk_index": 0,
+  "chunk_count": 1
 }
 ```
 
@@ -218,9 +218,10 @@ This allows accurate simulation of production retrieval behavior before embeddin
 ├── eda/                   # (Note) Exploratory data analysis - source of structured insights
 │   └── hypothesis_eda.ipynb
 │
-├── output/                # Generated outputs (demo, evaluation)
-│   ├── demo_output.json   # Clean demo showing pipeline output
-│   └── full_comparison_results.json
+├── output/                # Generated pipeline outputs
+│   ├── documents.json     # Generated documents (insight → document)
+│   ├── chunks.json        # Chunked documents ready for embedding
+│   └── pinecone_ready.json # Pinecone upsert format (id, text, metadata)
 │
 ├── config.yaml            # Pipeline configuration (retrieval_v1_stable)
 ├── demo_pipeline.py       # End-to-end demo script
@@ -352,8 +353,7 @@ To use a specific version, uncomment the `retrieval.use_version` setting.
 The evaluation framework measures retrieval quality **before embedding** using semantic similarity:
 
 ```bash
-python evaluation_demo.py          # Simple evaluation
-python evaluation/full_comparison_evaluator.py  # Full baseline vs enriched vs optimized
+python demo_pipeline.py           # Run full pipeline (insights → documents → chunks)
 ```
 
 Metrics computed:
@@ -361,7 +361,7 @@ Metrics computed:
 - **Precision@k**: Accuracy of top-k results
 - **MRR**: Mean Reciprocal Rank (first relevant doc position)
 
-See `experiments/retrieval_v1_results.json` for final evaluation results.
+The pipeline produces retrieval-optimized documents and chunks ready for embedding and vector storage.
 
 ---
 
