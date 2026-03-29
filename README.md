@@ -231,6 +231,35 @@ This allows accurate simulation of production retrieval behavior before embeddin
 └── SYSTEM_DESIGN.md       # System design document (formerly CLAUDE.md)
 ```
 
+## 📦 Sample Output
+
+This repository includes a sample output from the pipeline:
+
+- `output/chunks.json`: retrieval-ready chunks generated from structured insights
+
+Each item represents a semantically coherent chunk with metadata, ready for embedding and vector database upsert (e.g., Pinecone).
+
+Example structure:
+
+```json
+{
+  "text": "# [FACT] Technology has the highest profit of $664K with margin 14%\n\nTechnology has the highest profit of $664K with margin 14%\n\n- Dimensions: category\n- Metrics: profit, margin\n- Grain: grouped by category",
+  "metadata": {
+    "type": "fact",
+    "dimensions": ["category"],
+    "metrics": ["profit", "margin"],
+    "title": "Technology has the highest profit of $664K with margin 14%",
+    "importance": "high",
+    "confidence": 1.0,
+    "source": "EDA",
+    "grain": "grouped by category",
+    "_doc_id": 0
+  },
+  "chunk_index": 0,
+  "chunk_count": 1
+}
+```
+
 ---
 
 ## Quick Start
